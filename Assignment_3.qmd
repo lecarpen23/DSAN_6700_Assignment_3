@@ -1,0 +1,264 @@
+---
+title: Personal Assignment 2
+author:
+  - Landon Carpenter
+date: 17Oct2023
+format:
+  html:
+    toc: true
+    self-contained: true
+    embed-resources: true
+    output-file: Personal_Assignment_2.html
+    code-copy: true
+    code-line-numbers: true
+    warning: false
+    error: false
+    message: false
+jupyter: python3
+---
+
+```{python}
+#| vscode: {languageId: python}
+import random 
+from seaborn.palettes import color_palette
+random.seed(1276)
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+```
+
+```{python}
+#| vscode: {languageId: python}
+#load and show the first 6 points
+card = pd.read_csv('creditcard.csv')
+card.head(6)
+```
+
+```{python}
+#| vscode: {languageId: python}
+# 2. Describe the data
+card.describe()
+```
+
+```{python}
+#| vscode: {languageId: python}
+# #show the type of each column
+# card.dtypes
+```
+
+```{python}
+#| vscode: {languageId: python}
+#show a correlation heat plot of the data
+import seaborn as sns
+plt.figure(figsize=(20,10))
+sns.heatmap(card.corr(), cmap="YlGnBu")
+plt.show()
+```
+
+```{python}
+#| vscode: {languageId: python}
+#take a sample for the scatter matrix
+card_sample = card.sample(frac=.15)
+```
+
+```{python}
+#| vscode: {languageId: python}
+v_cols = [f"V{i}" for i in range(1,29, 4)]
+
+my_cols = ['Time', 'Amount', 'Class'] + v_cols
+my_sample = card_sample[my_cols]
+```
+
+```{python}
+#| vscode: {languageId: python}
+#4 Scatterplot matrix
+import plotly.express as px
+import plotly.io as pio
+fig = px.scatter_matrix(my_sample, color="Class", title="Scatterplot Matrix of Time, Amount, Class, and Every 4th V Column")
+fig.update_traces(marker=dict(size=2), selector=dict(diagonal='histogram'), showupperhalf=False)
+fig.update_layout(font=dict(size=7, color='black'))
+pio.write_html(fig, file='scatterplot_matrix.html')
+fig.show()
+```
+
+
+```{python}
+#| vscode: {languageId: python}
+#split the data into train and test, sending card['Class'] to y and leaving test as .2
+from sklearn.model_selection import train_test_split
+
+X = card.drop('Class', axis=1)
+y = card['Class']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1276)
+```
+
+```{python}
+#| vscode: {languageId: python}
+# y.head(6)
+```
+
+## Explanation of Commented Code
+ 
+ The portions of code for training the model are commented out because they take 9ish hours to run. I have saved the results to a csv and loaded them back in to make the boxplot. Additionally, two models have been saved and will be loaded in to complete the notebook. 
+
+```{python}
+#| vscode: {languageId: python}
+#6 Perform classification using methods mentioned in word doc
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import BaggingRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import cross_val_score, RepeatedKFold
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
+from lightgbm import LGBMRegressor
+import torch
+
+# #I dont think sklearn supports gpu acceleration?
+# #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# def train_eval(X_train, y_train, X_test, y_test):
+#     regressors = {
+#         'Linear Regression': LinearRegression(),
+#         'Decision Tree': DecisionTreeRegressor(), 
+#         'Random Forest': RandomForestRegressor(), 
+#         'K-Nearest Neighbors': KNeighborsRegressor(), 
+#         'Bagging': BaggingRegressor(), 
+#         'Gradient Boosting': GradientBoostingRegressor(),
+#         'LightGBM': LGBMRegressor(),
+#         'Ridge': Ridge(),
+#         'Lasso': Lasso()}
+
+#     results, names = [], []
+
+#     for name, method in regressors.items():
+#       cv = RepeatedKFold(n_splits=5, n_repeats=3, random_state=1276)
+#       scores = -cross_val_score(method, X_train, y_train, scoring= 'neg_mean_absolute_error', cv=cv, n_jobs=-1)
+#       results.append(scores)
+#       names.append(name)
+#     return results, names
+
+# results, model_names = train_eval(X_train, y_train, X_test, y_test)
+```
+
+```{python}
+#| vscode: {languageId: python}
+# regressmod = pd.DataFrame(np.transpose(results), columns=model_names)
+# regressmod = pd.melt(regressmod.reset_index(), id_vars='index', value_vars=model_names)
+```
+
+```{python}
+#| vscode: {languageId: python}
+# print(type(regressmod))
+# print(regressmod.groupby('variable').mean())
+```
+
+```{python}
+#| vscode: {languageId: python}
+# #save regressmod to csv
+# regressmod.to_csv('new_regressmod.csv')
+```
+
+```{python}
+#| vscode: {languageId: python}
+#load in the csv
+regressmod = pd.read_csv('new_regressmod.csv')
+```
+
+```{python}
+#| vscode: {languageId: python}
+#show box plot for results
+def box_results(the_results):
+    #use px to make a box plot of the results from regressmod
+    fig = px.box(the_results, x="variable", y="value", title="Box Plot of Regression Models")
+    fig.show()
+
+box_results(regressmod)
+```
+
+This is a little more formal of a way to confirm what I'm seeing in the boxplots. Actually looks like I cant use Logistic Regression. So I'll take it out
+
+```{python}
+#| vscode: {languageId: python}
+# sorted_regressors = sorted(zip(model_names, results), key=lambda x: np.mean(x[1]))
+# top_models = sorted_regressors[:4]
+
+# print([name for name, _ in top_models])
+```
+
+```{python}
+#| vscode: {languageId: python}
+level0 = list()
+level0.append(('bag', BaggingRegressor()))
+level0.append(('dt', DecisionTreeRegressor()))
+level0.append(('rf', RandomForestRegressor()))
+level0.append(('knn', KNeighborsRegressor()))
+print(level0)
+```
+
+```{python}
+#| vscode: {languageId: python}
+from lightgbm import LGBMRegressor
+from sklearn.ensemble import StackingRegressor
+# level1 = LGBMRegressor()
+# stacked = StackingRegressor(estimators=level0, final_estimator=level1, cv=3)
+# stacked.fit(X_train, y_train)
+```
+
+```{python}
+#| vscode: {languageId: python}
+import pickle 
+
+# #8 export and import 
+# with open('new_stacked_model.pkl', 'wb') as f:
+#     pickle.dump(stacked, f)
+```
+
+```{python}
+#| vscode: {languageId: python}
+# with open('new_stacked_model.pkl', 'rb') as f:
+#     loaded_model = pickle.load(f)
+```
+
+```{python}
+#| vscode: {languageId: python}
+#import the model back in as stacked 
+loaded_model = pickle.load(open('new_stacked_model.pkl', 'rb'))
+```
+
+```{python}
+#| vscode: {languageId: python}
+#9
+#make predictions with the imported model
+y_pred = loaded_model.predict(X_test)
+```
+
+```{python}
+#| vscode: {languageId: python}
+#get an the mse for the predictions
+mse = mean_squared_error(y_test, y_pred)
+print('Mean Squared Error: %.5f' % mse)
+```
+
+```{python}
+#| vscode: {languageId: python}
+#9 
+#make a scatter plot of the predictions
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, y_pred, alpha=.5, edgecolors='w', linewidths=.25)
+plt.xlabel('Actual')
+plt.ylabel('Predicted')
+plt.title('Actual vs Predicted')
+
+#add a grid
+plt.grid(True, color='black', alpha=.25, linewidth=.25)
+
+plt.tight_layout()
+plt.show()
+```
+
